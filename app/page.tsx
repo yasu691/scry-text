@@ -20,13 +20,33 @@ const ScryEditor: React.FC = () => {
     setError(null);
   }
 
+  // 重複した文字列を削除する関数
+  function mergeStrings(inputText: string, predictionText: string) {
+    const inputTextLen = inputText.length;
+    const predictionTextLen = predictionText.length;
+    let maxOverlap = 0;
+
+    // 重複部分の最大長を探す
+    for (let i = 1; i <= Math.min(inputTextLen, predictionTextLen); i++) {
+      const end = inputText.slice(-i);
+      const start = predictionText.slice(0, i);
+      if (end === start) {
+        maxOverlap = i;
+      }
+    }
+
+    // 重複部分を削除したPredictionTextを返す
+    return predictionText.slice(maxOverlap);
+  }
+
   // AIの予測を取得する関数
   const fetchPrediction = useCallback(async (text: string) => {
     // textが空白じゃないかを確認、trimは前後の空白を除去している
     if(text.trim()){
       try {
         const result = await getPrediction(text);
-        setPrediction(result);
+        // 重複している部分を削除してからセット
+        setPrediction(mergeStrings(text, result));
       } catch(error) {
         console.error("Error fetching prediction:", error);
         setError(
