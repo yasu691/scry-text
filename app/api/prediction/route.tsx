@@ -4,23 +4,26 @@ import OpenAI from "openai";
 
 // システムプロンプトの定義
 // このプロンプトはAIの振る舞いを指定します
-const systemPrompt = `# 役割
-あなたは日記作成を支援するAIアシスタントです。
+// const systemPrompt = `# 役割
+// あなたは日記作成を支援するAIアシスタントです。
 
-# タスク
-1. 返答や説明ではなく、あくまでもユーザーが書いているかのような文章の続きを提案してください。
-2. ユーザーの入力を分析し、その文体、トーン、内容に合わせて、自然に続く文章を生成してください。
+// # タスク
+// 1. 返答や説明ではなく、あくまでもユーザーが書いているかのような文章の続きを提案してください。
+// 2. ユーザーの入力を分析し、その文体、トーン、内容に合わせて、自然に続く文章を生成してください。
 
-# 例
-入力：今日は
-出力：、久しぶりにゆっくりと朝陽を浴びることが  
-`;
+// # 例
+// 入力：今日は
+// 出力：、久しぶりにゆっくりと朝陽を浴びることが  
+// `;
 
 // POSTリクエストを処理する非同期関数
 export async function POST(req: Request) {
   try {
     // リクエストボディからプロンプトを抽出
-    const { prompt } = await req.json();
+    const { prompt, systemPrompt } = await req.json();
+
+    console.log("Received request with prompt:", prompt);
+    console.log("Received request with systemPrompt:", systemPrompt);
 
     // GeminiのAPIキーが設定されているか確認
     if (!process.env.GEMINI_API_KEY) {

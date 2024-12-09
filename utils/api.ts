@@ -2,11 +2,11 @@
 import axios from "axios";
 
 // アロー関数を使用してgetPrediction関数を定義し、エクスポート
-export const getPrediction = async (prompt: string): Promise<string> => {
+export const getPrediction = async (prompt: string, systemPrompt: string): Promise<string> => {
   try {
     // '/api/prediction' エンドポイントにPOSTリクエストを送信
     // promptをリクエストボディに含める
-    const response = await axios.post("/api/prediction", { prompt });
+    const response = await axios.post("/api/prediction", { prompt, systemPrompt });
 
     // レスポンスからpredictionプロパティを取り出して返す
     return response.data.prediction;

@@ -1,11 +1,70 @@
 "use client";
 
+import { text } from "stream/consumers";
 import { getPrediction } from "../utils/api";
 import { use, useCallback, useEffect, useRef, useState } from "react";
 
 // エディタコンポーネント
 const ScryEditor: React.FC = () => {
   // 状態変数の定義
+  const [systemPrompt, setSystemPrompt] = useState(`# 役割
+あなたは、ユーザーが書き始めたビジネスにおけるチャットテキスト文章の続きを提案するAIアシスタントです。
+
+## タスク
+### 自然な文脈の理解と調和
+ユーザーの入力内容を深く分析し、その文体、トーン、内容に完全に調和した自然な続きを生成してください。ユーザーのスタイルを尊重し、一貫性のある文章を提案することを心がけてください。
+
+### 対話の特性に配慮
+
+- テキストチャット特有の曖昧さや文脈の変化を理解し、不必要な誤解を招かないように注意してください。
+- 丁寧で謙虚な態度を保ち、不遜な印象を与えないよう慎重に言葉を選んでください。
+
+### 誤解のリスクを最小化
+
+- ユーザーの意図や気持ちをくみ取り、押しつけがましい提案や高圧的な表現を避けてください。
+- 文章のニュアンスが誤解されそうな場合は、慎重な言葉遣いを用い、可能な限り明確でシンプルな表現を心がけてください。
+
+### ユーザー主体の体験を提供
+あなたの出力は、あくまでユーザー自身が続きを書いたかのように感じられる文章でなければなりません。解説や返答を行わず、文章の提案に徹してください。
+
+### 文脈を補完する工夫
+話の流れや意図を的確にくみ取り、自然な展開や関連性の高いアイデアを盛り込むことで、ユーザーの目的達成を支援してください。ただし、独自の主張や意見を過度に盛り込まないよう注意してください。
+
+## 追加の注意
+- ユーザーの意図を十分に汲み取り、柔軟に対応してください。
+- 長すぎる提案や不自然な展開を避け、ユーザーの文章スタイルに合った適切な長さの出力を心がけてください。
+- テキストチャットにおける言葉の微妙なニュアンスを常に意識してください。
+
+## 例
+
+### 例1: カジュアルなトーン
+ユーザーの入力
+「今日はいい天気だから、散歩に行こうと思ったけど」
+
+AIの提案
+「途中で雲が出てきて、少し雨が降りそうな気配もしてきたんだよね。でも、傘を持って出かけるのも悪くないかなって。」
+
+### 例2: ビジネス向けのトーン
+ユーザーの入力
+「この件に関して、明日までに解決策を提示する必要があります。具体的には」
+
+AIの提案
+「現状の課題を明確に洗い出し、優先順位をつけた上で、短期的な対策案と長期的な戦略を整理することが重要です。」
+
+### 例3: 説明文調
+ユーザーの入力
+「まずは基本的な構成要素を整理し、それを基にして」
+
+AIの提案
+「全体像を描きつつ、細かい部分を段階的に組み立てていく方法が効果的です。このプロセスによって、後の修正が容易になります。」
+
+### 例4: 物語調
+ユーザーの入力
+「彼女は静かな森の中を歩いていた。その時、突然」
+
+AIの提案
+「頭上の木々がざわめき、どこからともなく聞こえる低い唸り声に気づいた。足元の草むらが揺れたかと思うと、小さな影が飛び出してきた。」
+`); // システムプロンプト
   const [input, setInput] = useState(""); // 入力テキスト
   const [prediction, setPrediction] = useState(""); // AIの予測テキスト
   const [error, setError] = useState<string | null>(null); // エラーメッセージ
@@ -17,6 +76,13 @@ const ScryEditor: React.FC = () => {
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     console.log("text area event: hancleInput");
     setInput(e.target.value);
+    setError(null);
+  }
+
+  // システムプロンプトの入力をstateに反映する関数
+  const handleSystemPrompt = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    console.log("text area event: handleSystemPrompt");
+    setSystemPrompt(e.target.value);
     setError(null);
   }
 
@@ -44,7 +110,7 @@ const ScryEditor: React.FC = () => {
     // textが空白じゃないかを確認、trimは前後の空白を除去している
     if(text.trim()){
       try {
-        const result = await getPrediction(text);
+        const result = await getPrediction(text, systemPrompt);
         // 重複している部分を削除してからセット
         setPrediction(mergeStrings(text, result));
       } catch(error) {
@@ -58,7 +124,7 @@ const ScryEditor: React.FC = () => {
     } else {
       setPrediction("");
     }
-  }, []);
+  }, [systemPrompt]); // systemPromptが変更されたときのみ関数を再作成
 
   // AIの予測をテキストエディタに適用する関数
   const applySuggestion = useCallback(() => {
@@ -124,7 +190,7 @@ const ScryEditor: React.FC = () => {
     // IME入力時以外の時に入力予測を取得
     if (!isComposing) {
       // 遅延を付けて、inputが連続で変更されている間は予測が出ないようにする
-      const timeoutId = setTimeout(() => fetchPrediction(input), 200);
+      const timeoutId = setTimeout(() => fetchPrediction(input), 1000);
       // timeoutのタイマーをリセットする
       return () => clearTimeout(timeoutId);
     }
@@ -134,9 +200,18 @@ const ScryEditor: React.FC = () => {
   return (
     <div className="bg-transparent flex items-top justify-center">
       <div className="w-full max-w-2xl bg-white rounded-lg shadow-md p-6">
+        <div>
+          <textarea
+          className="w-full p-3 border border-gray-300 rounded min-h-[200px]
+          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+          whitespace-pre-wrap break-words bg-white text-gray-800"
+          value={systemPrompt}
+          onChange={handleSystemPrompt}
+          />
+        </div>
         <div className="flex justify-between items-center mb-4">
           <p className="text-slate-300 text-sm">
-            未来を確定させるにはTabボタンを押して!
+            Tabを押すと予測を適用できます
           </p>
           <button onClick={handleCopy}
             className="px-4 py-2 bg-slate-300 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
